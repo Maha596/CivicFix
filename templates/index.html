@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}CivicFix — Smart Public Infrastructure & Municipal Operations Portal{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <div class="hero-badge animate-fade-in">
+            <i class="fa-solid fa-building-columns"></i> Official Public Infrastructure & Care Portal
+        </div>
+        <h1 class="hero-title animate-slide-up">
+            Report Issues. <span class="text-gradient">Track Progress.</span> Restore Our City.
+        </h1>
+        <p class="hero-subtitle animate-slide-up">
+            CivicFix connects citizens directly with municipal operational teams to report, prioritize, and monitor public infrastructure repairs — from road craters and streetlights to sanitation — with full photographic proof of resolution.
+        </p>
+
+        <div class="hero-cta animate-slide-up">
+            <a href="{{ url_for('citizen.report_issue') }}" class="btn btn-primary btn-lg pulse-shadow">
+                <i class="fa-solid fa-camera"></i> Report Infrastructure Issue
+            </a>
+            <a href="{{ url_for('citizen.nearby_issues') }}" class="btn btn-glass btn-lg">
+                <i class="fa-solid fa-map-location-dot"></i> Live Public GIS Map
+            </a>
+            {% if not current_user %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-white btn-lg">
+                    <i class="fa-solid fa-magnifying-glass"></i> Track Ticket
+                </a>
+            {% else %}
+                <a href="{{ url_for('citizen.my_reports') }}" class="btn btn-outline-white btn-lg">
+                    <i class="fa-solid fa-list-check"></i> My Submissions
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Live Metrics Counter -->
+        <div class="hero-stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_reports }}</div>
+                <div class="stat-label"><i class="fa-solid fa-bullhorn"></i> Infrastructure Reports</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ resolved_reports }}</div>
+                <div class="stat-label"><i class="fa-solid fa-circle-check text-success"></i> Verified Resolutions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ active_reports }}</div>
+                <div class="stat-label"><i class="fa-solid fa-wrench text-warning"></i> Active Work Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100%</div>
+                <div class="stat-label"><i class="fa-solid fa-shield-check text-accent"></i> Verified Proof of Work</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Issue Categories Section -->
+<section class="section categories-section">
+    <div class="container">
+        <div class="section-header text-center">
+            <span class="section-tag">Municipal Domains</span>
+            <h2 class="section-title">Public Infrastructure Services We Manage</h2>
+            <p class="section-subtitle">Automated department routing and priority dispatch across 8 primary municipal infrastructure categories.</p>
+        </div>
+
+        <div class="category-grid">
+            <div class="category-card">
+                <div class="cat-icon cat-pothole"><i class="fa-solid fa-road-barrier"></i></div>
+                <h3>Potholes & Craters</h3>
+                <p>Surface depressions, hazardous road craters, and asphalt erosion on public streets.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Road Maintenance</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-garbage"><i class="fa-solid fa-trash-can"></i></div>
+                <h3>Sanitation & Waste</h3>
+                <p>Overflowing community dumpsters, uncollected litter, and illicit waste dumping.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Sanitation Dept</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-streetlight"><i class="fa-solid fa-lightbulb"></i></div>
+                <h3>Street Lighting</h3>
+                <p>Non-operational street luminaires, flickering fixtures, and dark corridor hazards.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Electrical Division</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-water"><i class="fa-solid fa-faucet-drip"></i></div>
+                <h3>Water Supply Mains</h3>
+                <p>Ruptured distribution pipelines, leaking fire hydrants, and clean water spillage.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Water Supply Board</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-road"><i class="fa-solid fa-road"></i></div>
+                <h3>Road & Sidewalk Damage</h3>
+                <p>Severe road fracturing, collapsed pavements, open manholes, and curb damage.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Public Works Dept</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-drainage"><i class="fa-solid fa-water"></i></div>
+                <h3>Storm Drainage</h3>
+                <p>Clogged storm drains, sewage overflows, stagnating water, and culvert blockages.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Drainage Division</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-tree"><i class="fa-solid fa-tree"></i></div>
+                <h3>Fallen Trees & Foliage</h3>
+                <p>Storm-damaged trees, hazardous overhanging branches, and road obstructions.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Parks & Forestry</span>
+            </div>
+
+            <div class="category-card">
+                <div class="cat-icon cat-property"><i class="fa-solid fa-landmark"></i></div>
+                <h3>Public Property Damage</h3>
+                <p>Damaged bus stops, broken pedestrian railings, defaced civic infrastructure, and barriers.</p>
+                <span class="cat-dept"><i class="fa-solid fa-building"></i> Civil Engineering</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Workflow Section -->
+<section class="section workflow-section">
+    <div class="container">
+        <div class="section-header text-center">
+            <span class="section-tag">Operational Lifecycle</span>
+            <h2 class="section-title">How Complaints Are Processed</h2>
+            <p class="section-subtitle">A transparent, audited 4-step workflow connecting citizens directly with repair crews.</p>
+        </div>
+
+        <div class="workflow-steps">
+            <div class="step-card">
+                <div class="step-num">01</div>
+                <div class="step-icon"><i class="fa-solid fa-camera-retro"></i></div>
+                <h4>Citizen Submission</h4>
+                <p>Capture photo proof, pin precise GPS coordinates, and submit incident details.</p>
+            </div>
+
+            <div class="step-card highlight-step">
+                <div class="step-num">02</div>
+                <div class="step-icon"><i class="fa-solid fa-sliders"></i></div>
+                <h4>Smart Triage & Priority</h4>
+                <p>Instant photo evaluation categorizes the issue, while our priority engine calculates severity score.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-num">03</div>
+                <div class="step-icon"><i class="fa-solid fa-user-gear"></i></div>
+                <h4>Work Order Dispatch</h4>
+                <p>Municipal authorities review tickets, route to the correct department, and dispatch repair crews.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-num">04</div>
+                <div class="step-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <h4>Resolution & Proof</h4>
+                <p>Repair teams upload completion photos. Citizens verify the fix before ticket closure.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Showcase of Resolved Issues -->
+{% if showcase %}
+<section class="section showcase-section">
+    <div class="container">
+        <div class="section-header text-center">
+            <span class="section-tag">Public Transparency</span>
+            <h2 class="section-title">Recent Municipal Work Orders Closed</h2>
+            <p class="section-subtitle">Real before-and-after photographic evidence uploaded by repair teams and verified by citizens.</p>
+        </div>
+
+        <div class="showcase-grid">
+            {% for item in showcase %}
+                <div class="showcase-card">
+                    <div class="showcase-images">
+                        <div class="showcase-img-box">
+                            <span class="img-tag tag-before">Before (Reported)</span>
+                            <img src="{{ url_for('uploaded_file', filename=item.image_path) }}" alt="Issue Before">
+                        </div>
+                        <div class="showcase-img-box">
+                            <span class="img-tag tag-after">After (Resolved)</span>
+                            <img src="{{ url_for('uploaded_file', filename=item.resolution_image) }}" alt="Resolution Evidence">
+                        </div>
+                    </div>
+                    <div class="showcase-content">
+                        <div class="showcase-header">
+                            <span class="complaint-chip">{{ item.complaint_id }}</span>
+                            <span class="badge {{ item.priority|priority_badge }}">{{ item.priority }}</span>
+                            <span class="badge {{ item.status|status_badge }}">{{ item.status }}</span>
+                        </div>
+                        <h4>{{ item.category }}</h4>
+                        <p class="showcase-location"><i class="fa-solid fa-location-dot"></i> {{ item.landmark or item.address or 'Reported Location' }}</p>
+                        <p class="showcase-note"><strong>Repair Team Note:</strong> {{ item.resolution_note }}</p>
+                        <a href="{{ url_for('citizen.report_details', complaint_id=item.complaint_id) }}" class="btn btn-sm btn-outline">
+                            View Work Order Timeline <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Call to Action Banner -->
+<section class="cta-banner">
+    <div class="container text-center">
+        <h2>Notice a Infrastructure Defect in Your Neighborhood?</h2>
+        <p>Help city engineers restore public safety by reporting hazards with instant GPS tagging.</p>
+        <div class="cta-buttons">
+            <a href="{{ url_for('citizen.report_issue') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-plus-circle"></i> File a Complaint
+            </a>
+            <a href="{{ url_for('citizen.nearby_issues') }}" class="btn btn-outline-white btn-lg">
+                <i class="fa-solid fa-map"></i> View City GIS Map
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

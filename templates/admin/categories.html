@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Issue Categories - Administrator Console{% endblock %}
+
+{% block content %}
+<div class="admin-categories-page">
+    <div class="container">
+        <div class="page-header-bar">
+            <div>
+                <span class="section-tag admin-tag"><i class="fa-solid fa-tags"></i> Taxonomies</span>
+                <h1 class="page-title">Civic Issue Categories</h1>
+                <p class="page-subtitle">Configure AI-supported problem types and default municipal department mappings.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="row" style="display:flex; gap:25px; flex-wrap:wrap;">
+            <!-- Left: Add New Category Card -->
+            <div style="flex:1; min-width:320px;">
+                <div class="specs-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-plus-circle"></i> Add New Category</h3>
+                    </div>
+                    <form action="{{ url_for('admin.categories') }}" method="POST" style="padding:20px;">
+                        <div class="form-group">
+                            <label for="catName">Category Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="catName" class="form-control" placeholder="e.g. Broken Footpath" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="catDept">Default Department Mapping</label>
+                            <select name="department_id" id="catDept" class="form-control">
+                                <option value="">-- Auto-select or None --</option>
+                                {% for d in departments %}
+                                    <option value="{{ d.id }}">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="catPriority">Default Baseline Priority</label>
+                            <select name="default_priority" id="catPriority" class="form-control">
+                                <option value="LOW">LOW</option>
+                                <option value="MEDIUM" selected>MEDIUM</option>
+                                <option value="HIGH">HIGH</option>
+                                <option value="CRITICAL">CRITICAL</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fa-solid fa-check"></i> Register Category
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Existing Categories Table -->
+            <div style="flex:2; min-width:450px;">
+                <div class="reports-table-card">
+                    <div class="card-header" style="padding:16px 20px; border-bottom:1px solid var(--border-color);">
+                        <h3 style="margin:0;"><i class="fa-solid fa-layer-group"></i> Active Categories ({{ categories|length }})</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="civic-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Default Department</th>
+                                    <th>Default Priority</th>
+                                    <th>Usage Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in categories %}
+                                    <tr>
+                                        <td><strong>{{ c.name }}</strong></td>
+                                        <td>{{ c.department_name or 'Not Mapped' }}</td>
+                                        <td><span class="badge {{ c.default_priority|priority_badge }}">{{ c.default_priority }}</span></td>
+                                        <td><span class="badge badge-secondary">{{ c.usage_count or 0 }} reports</span></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

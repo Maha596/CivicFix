@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Operations Console - CivicFix{% endblock %}
+
+{% block head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard-page">
+    <div class="container">
+        <!-- Top Operations Bar -->
+        <div class="admin-top-bar">
+            <div>
+                <span class="section-tag admin-tag"><i class="fa-solid fa-shield-halved"></i> Municipal Authority Console</span>
+                <h1 class="page-title">Executive Operations Dashboard</h1>
+                <p class="page-subtitle">Real-time civic complaint triage, AI diagnosis verification, department dispatch, and resolution metrics.</p>
+            </div>
+            <div class="admin-top-actions">
+                <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-list-check"></i> Manage All Complaints
+                </a>
+                <a href="{{ url_for('admin.departments') }}" class="btn btn-outline">
+                    <i class="fa-solid fa-building-user"></i> Department Roster
+                </a>
+            </div>
+        </div>
+
+        <!-- Metric Counters Grid (6 Key Performance Indicators) -->
+        <div class="metrics-grid admin-metrics-grid">
+            <div class="metric-card metric-total">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-folder-tree"></i></span>
+                    <span class="metric-trend">Total</span>
+                </div>
+                <div class="metric-value">{{ stats.total }}</div>
+                <div class="metric-label">All Logged Complaints</div>
+            </div>
+
+            <div class="metric-card metric-new">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-bell"></i></span>
+                    <span class="metric-trend text-primary">Unverified</span>
+                </div>
+                <div class="metric-value">{{ stats.new_issues }}</div>
+                <div class="metric-label">Newly Reported</div>
+            </div>
+
+            <div class="metric-card metric-pending">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-user-clock"></i></span>
+                    <span class="metric-trend text-warning">Queued</span>
+                </div>
+                <div class="metric-value">{{ stats.pending_verification }}</div>
+                <div class="metric-label">Pending Verification</div>
+            </div>
+
+            <div class="metric-card metric-progress">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-person-digging"></i></span>
+                    <span class="metric-trend text-info">Dispatched</span>
+                </div>
+                <div class="metric-value">{{ stats.in_progress }}</div>
+                <div class="metric-label">Active In Progress</div>
+            </div>
+
+            <div class="metric-card metric-resolved">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-circle-check"></i></span>
+                    <span class="metric-trend text-success">Remediated</span>
+                </div>
+                <div class="metric-value">{{ stats.resolved }}</div>
+                <div class="metric-label">Verified Resolved</div>
+            </div>
+
+            <div class="metric-card metric-critical">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    <span class="metric-trend text-danger">Immediate</span>
+                </div>
+                <div class="metric-value">{{ stats.critical }}</div>
+                <div class="metric-label">Critical Hazard Alert</div>
+            </div>
+        </div>
+
+        <!-- 4 ANALYTICS CHARTS GRID -->
+        <div class="charts-grid">
+            <!-- Chart 1: Issues by Category -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fa-solid fa-chart-pie"></i> Issues by Category</h3>
+                    <small class="text-muted">Distribution across civic infrastructure domains</small>
+                </div>
+                <div class="chart-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Issues by Status -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fa-solid fa-chart-column"></i> Lifecycle Status Breakdown</h3>
+                    <small class="text-muted">Triage progress across active workflows</small>
+                </div>
+                <div class="chart-body">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Issues Over Time -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fa-solid fa-chart-line"></i> Complaint Influx Trend</h3>
+                    <small class="text-muted">Daily reporting volume timeline</small>
+                </div>
+                <div class="chart-body">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Priority Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fa-solid fa-gauge-high"></i> Intelligent Priority Distribution</h3>
+                    <small class="text-muted">AI & multi-criteria algorithmic weighting</small>
+                </div>
+                <div class="chart-body">
+                    <canvas id="priorityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Urgent Critical Issues Section -->
+        <div class="dashboard-section" style="margin-top: 30px;">
+            <div class="section-title-bar">
+                <div>
+                    <h2><i class="fa-solid fa-triangle-exclamation text-danger"></i> Urgent High-Priority Civic Issues</h2>
+                    <p>Complaints marked HIGH or CRITICAL requiring immediate field response.</p>
+                </div>
+                <a href="{{ url_for('admin.manage_reports', priority='CRITICAL') }}" class="btn btn-outline btn-sm">
+                    View All Critical Cases <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            {% if urgent_reports %}
+                <div class="reports-table-card">
+                    <div class="table-responsive">
+                        <table class="civic-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Category</th>
+                                    <th>Citizen</th>
+                                    <th>Landmark</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Department</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in urgent_reports %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('citizen.report_details', complaint_id=r.complaint_id) }}" class="complaint-link">
+                                                <strong>{{ r.complaint_id }}</strong>
+                                            </a>
+                                            {% if r.is_duplicate %}
+                                                <span class="mini-tag tag-duplicate"><i class="fa-solid fa-link"></i> Dup</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong>{{ r.category }}</strong></td>
+                                        <td>{{ r.citizen_name }}</td>
+                                        <td><i class="fa-solid fa-location-dot"></i> {{ r.landmark or r.address or 'N/A' }}</td>
+                                        <td><span class="badge {{ r.priority|priority_badge }}">{{ r.priority }}</span></td>
+                                        <td><span class="badge {{ r.status|status_badge }}">{{ r.status }}</span></td>
+                                        <td>{{ r.department_name or '<span class="text-warning">Unassigned</span>'|safe }}</td>
+                                        <td>
+                                            <a href="{{ url_for('citizen.report_details', complaint_id=r.complaint_id) }}" class="btn btn-sm btn-outline">
+                                                Review & Dispatch <i class="fa-solid fa-arrow-right"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state-card">
+                    <div class="empty-icon"><i class="fa-solid fa-shield-check"></i></div>
+                    <h3>No critical issues currently active</h3>
+                    <p>All emergency complaints have been resolved or mitigated.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Chart 1: Categories (Doughnut)
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ charts.categories|tojson }},
+                datasets: [{
+                    data: {{ charts.category_counts|tojson }},
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#64748b']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Chart 2: Status (Bar)
+        new Chart(document.getElementById('statusChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ charts.statuses|tojson }},
+                datasets: [{
+                    label: 'Complaints',
+                    data: {{ charts.status_counts|tojson }},
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // Chart 3: Over Time (Line)
+        new Chart(document.getElementById('timelineChart'), {
+            type: 'line',
+            data: {
+                labels: {{ charts.dates|tojson }},
+                datasets: [{
+                    label: 'New Reports',
+                    data: {{ charts.date_counts|tojson }},
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    tension: 0.35,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Chart 4: Priority Distribution (Pie)
+        new Chart(document.getElementById('priorityChart'), {
+            type: 'pie',
+            data: {
+                labels: {{ charts.priorities|tojson }},
+                datasets: [{
+                    data: {{ charts.priority_counts|tojson }},
+                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    });
+</script>
+{% endblock %}

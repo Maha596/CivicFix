@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Nearby Civic Issues Map - CivicFix{% endblock %}
+
+{% block head %}
+<style>
+    #civicPublicMap {
+        height: 580px;
+        width: 100%;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-page">
+    <div class="container">
+        <div class="page-header-bar">
+            <div>
+                <span class="section-tag"><i class="fa-solid fa-map-location-dot"></i> Geospatial GIS</span>
+                <h1 class="page-title">Live Public Infrastructure Map</h1>
+                <p class="page-subtitle">Real-time open civic complaints categorized by priority levels across the municipal jurisdiction.</p>
+            </div>
+            <a href="{{ url_for('citizen.report_issue') }}" class="btn btn-primary">
+                <i class="fa-solid fa-camera"></i> Report Issue at Your Location
+            </a>
+        </div>
+
+        <!-- Filter & Legend Bar -->
+        <div class="map-control-bar">
+            <div class="map-filter-group">
+                <select id="mapCategoryFilter" class="form-control" onchange="reloadMapMarkers()">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+
+                <select id="mapStatusFilter" class="form-control" onchange="reloadMapMarkers()">
+                    <option value="">All Statuses</option>
+                    {% for st in statuses %}
+                        <option value="{{ st }}">{{ st }}</option>
+                    {% endfor %}
+                </select>
+
+                <select id="mapPriorityFilter" class="form-control" onchange="reloadMapMarkers()">
+                    <option value="">All Priorities</option>
+                    <option value="CRITICAL">Critical Only</option>
+                    <option value="HIGH">High Only</option>
+                    <option value="MEDIUM">Medium Only</option>
+                    <option value="LOW">Low Only</option>
+                </select>
+            </div>
+
+            <!-- Priority Legend -->
+            <div class="map-legend">
+                <span class="legend-title">Priority Legend:</span>
+                <span class="legend-pill" style="border-left: 5px solid #ef4444;"><span class="dot dot-critical"></span> Critical</span>
+                <span class="legend-pill" style="border-left: 5px solid #f97316;"><span class="dot dot-high"></span> High</span>
+                <span class="legend-pill" style="border-left: 5px solid #eab308;"><span class="dot dot-medium"></span> Medium</span>
+                <span class="legend-pill" style="border-left: 5px solid #22c55e;"><span class="dot dot-low"></span> Low</span>
+            </div>
+        </div>
+
+        <!-- Leaflet Map Container -->
+        <div id="civicPublicMap"></div>
+
+        <div class="map-footer-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Click any colored marker on the map to inspect complaint details, photo preview, and current remediation status.</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var mapInstance = null;
+    var markersLayer = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initPublicCivicMap();
+    });
+
+    function initPublicCivicMap() {
+        // Center around Coimbatore Municipal Region
+        mapInstance = L.map('civicPublicMap').setView([11.0168, 76.9558], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(mapInstance);
+
+        markersLayer = L.layerGroup().addTo(mapInstance);
+
+        reloadMapMarkers();
+    }
+
+    function reloadMapMarkers() {
+        if (!markersLayer) return;
+        markersLayer.clearLayers();
+
+        var cat = document.getElementById('mapCategoryFilter').value;
+        var st = document.getElementById('mapStatusFilter').value;
+        var pri = document.getElementById('mapPriorityFilter').value;
+
+        var url = '/api/nearby-issues?';
+        if (cat) url += 'category=' + encodeURIComponent(cat) + '&';
+        if (st) url += 'status=' + encodeURIComponent(st) + '&';
+        if (pri) url += 'priority=' + encodeURIComponent(pri) + '&';
+
+        fetch(url)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success && data.data) {
+                    var bounds = [];
+                    data.data.forEach(function(item) {
+                        var lat = item.latitude;
+                        var lon = item.longitude;
+                        if (lat && lon) {
+                            bounds.push([lat, lon]);
+
+                            // Custom colored circle marker
+                            var circleMarker = L.circleMarker([lat, lon], {
+                                radius: 9,
+                                fillColor: item.priority_color,
+                                color: '#ffffff',
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.85
+                            });
+
+                            var popupHtml = `
+                                <div class="map-popup-card">
+                                    <div class="popup-header">
+                                        <strong>${item.complaint_id}</strong>
+                                        <span class="badge" style="background-color: ${item.priority_color}; color:#fff; font-size:11px;">${item.priority}</span>
+                                    </div>
+                                    <h4 style="margin:4px 0 6px 0; font-size:14px; font-weight:700;">${item.category}</h4>
+                                    <p style="margin:0 0 6px 0; font-size:12px; color:#475569;">${item.description}</p>
+                                    <div style="font-size:11px; color:#64748b; margin-bottom:8px;">
+                                        <div><i class="fa-solid fa-location-dot"></i> ${item.landmark}</div>
+                                        <div><i class="fa-solid fa-info-circle"></i> Status: <strong>${item.status}</strong></div>
+                                        <div><i class="fa-regular fa-calendar"></i> Reported: ${item.created_at}</div>
+                                    </div>
+                                    <a href="/reports/${item.complaint_id}" class="btn btn-sm btn-primary" style="display:block; text-align:center; padding:4px 8px; font-size:12px;">View Details & Timeline</a>
+                                </div>
+                            `;
+
+                            circleMarker.bindPopup(popupHtml);
+                            markersLayer.addLayer(circleMarker);
+                        }
+                    });
+
+                    if (bounds.length > 0) {
+                        mapInstance.fitBounds(bounds, { padding: [40, 40] });
+                    }
+                }
+            })
+            .catch(function(err) {
+                console.error("Failed to load map points:", err);
+            });
+    }
+</script>
+{% endblock %}

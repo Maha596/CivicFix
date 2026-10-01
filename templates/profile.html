@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - CivicFix{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="container container-sm">
+        <div class="page-header-bar">
+            <div>
+                <span class="section-tag"><i class="fa-solid fa-id-card"></i> Account Settings</span>
+                <h1 class="page-title">Manage Your Profile</h1>
+                <p class="page-subtitle">Update contact details and account security credentials.</p>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <div class="profile-header-strip">
+                <div class="profile-avatar-lg">
+                    {{ user.name[0]|upper }}
+                </div>
+                <div class="profile-meta">
+                    <h2>{{ user.name }}</h2>
+                    <p>{{ user.email }}</p>
+                    <span class="role-tag role-{{ user.role }}"><i class="fa-solid fa-shield"></i> {{ user.role|upper }}</span>
+                </div>
+            </div>
+
+            <form action="{{ url_for('auth.profile') }}" method="POST" class="profile-form">
+                <div class="form-group">
+                    <label for="name"><i class="fa-solid fa-user"></i> Full Name</label>
+                    <input type="text" id="name" name="name" value="{{ user.name }}" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" value="{{ user.email }}" class="form-control" disabled>
+                    <small class="text-muted">Email address is your primary account identifier and cannot be changed.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="phone" name="phone" value="{{ user.phone or '' }}" class="form-control" placeholder="+91 9876543210">
+                </div>
+
+                <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--border-color);">
+
+                <h3><i class="fa-solid fa-key"></i> Security & Password Update</h3>
+                <p class="text-muted">Leave blank if you do not want to alter your password.</p>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="new_password">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Min. 6 characters">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="confirm_password">Confirm New Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-type password">
+                    </div>
+                </div>
+
+                <div class="form-submit-bar" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
+                    </button>
+                    <a href="{{ url_for('citizen.dashboard') if user.role != 'admin' else url_for('admin.dashboard') }}" class="btn btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}About CivicFix - 3rd-Year B.Tech AI & Data Science Mini-Project{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <div class="container container-sm">
+        <div class="form-header text-center">
+            <span class="section-tag"><i class="fa-solid fa-graduation-cap"></i> Academic Project Documentation</span>
+            <h1 class="page-title">About CivicFix System</h1>
+            <p class="page-subtitle">Intelligent Public Infrastructure Issue Reporting & Resolution Platform</p>
+        </div>
+
+        <div class="specs-card" style="margin-bottom: 25px;">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-bullseye"></i> Project Objectives</h3>
+            </div>
+            <div class="specs-body">
+                <ol class="project-objectives-list" style="padding-left: 20px; line-height: 1.8;">
+                    <li>Provide citizens with a modern, intuitive platform to report civic infrastructure problems with photographic evidence.</li>
+                    <li>Integrate an AI-based Computer Vision classifier module to diagnose and categorize civic defects automatically.</li>
+                    <li>Utilize GPS and OpenStreetMap/Leaflet geospatial services to capture pinpoint defect locations.</li>
+                    <li>Formulate an explainable multi-criteria priority scoring engine evaluating inherent risk, reported severity, spatial density, and safety indicators.</li>
+                    <li>Equip municipal authorities with a centralized operations management dashboard featuring real-time analytics.</li>
+                    <li>Enforce transparent accountability by recording resolution photographic evidence before closing complaints.</li>
+                    <li>Detect and group duplicate submissions using the Haversine spatial proximity metric.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="specs-card" style="margin-bottom: 25px;">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-brain"></i> AI & Data Science Methodology</h3>
+            </div>
+            <div class="specs-body">
+                <p>The CivicFix AI subsystem operates across three core data science disciplines:</p>
+                <div style="margin-top: 15px;">
+                    <h4>1. Visual Feature Extraction & Image Classification</h4>
+                    <p style="color: var(--text-muted); font-size: 14px;">
+                        Extracts normalized color histograms, road-asphalt pixel ratios, vegetative foliage indices, specular liquid reflections, and spatial edge gradients. Features are scored against multi-class decision distributions and calibrated using softmax normalization to produce human-interpretable confidence ratings.
+                    </p>
+
+                    <h4>2. Spatial GIS & Haversine Deduplication</h4>
+                    <p style="color: var(--text-muted); font-size: 14px;">
+                        Evaluates great-circle distances between GPS coordinates using the Haversine formula to identify concurrent complaints within a 150-meter radius, linking duplicates without data loss.
+                    </p>
+
+                    <h4>3. Explainable Prioritization Algorithm</h4>
+                    <p style="color: var(--text-muted); font-size: 14px;">
+                        Calculates an urgency score (0-100) combining category hazard weights, citizen severity, neighborhood complaint clusters, hazard keywords, and temporal aging.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="specs-card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-layer-group"></i> Architecture & Technology Stack</h3>
+            </div>
+            <div class="specs-body">
+                <div class="tech-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-top:10px;">
+                    <div class="tech-box" style="background:var(--bg-light); padding:12px; border-radius:8px;">
+                        <strong>Backend:</strong>
+                        <div>Python 3.11, Flask, Jinja2</div>
+                    </div>
+                    <div class="tech-box" style="background:var(--bg-light); padding:12px; border-radius:8px;">
+                        <strong>Frontend:</strong>
+                        <div>HTML5, Modern CSS3, Vanilla JS</div>
+                    </div>
+                    <div class="tech-box" style="background:var(--bg-light); padding:12px; border-radius:8px;">
+                        <strong>Mapping & GIS:</strong>
+                        <div>OpenStreetMap, Leaflet.js</div>
+                    </div>
+                    <div class="tech-box" style="background:var(--bg-light); padding:12px; border-radius:8px;">
+                        <strong>Data & AI:</strong>
+                        <div>Pillow, NumPy, scikit-learn</div>
+                    </div>
+                    <div class="tech-box" style="background:var(--bg-light); padding:12px; border-radius:8px;">
+                        <strong>Database:</strong>
+                        <div>SQLite / MySQL Relational Schema</div>
+                    </div>
+                    <div class="tech-box" style="background:var(--bg-light); padding:12px; border-radius:8px;">
+                        <strong>Visualization:</strong>
+                        <div>Chart.js 4.4</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

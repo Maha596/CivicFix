@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Dashboard - CivicFix{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+    <div class="container">
+        <!-- Dashboard Welcome Bar -->
+        <div class="dashboard-header">
+            <div>
+                <span class="user-greeting">Welcome back,</span>
+                <h1 class="dashboard-title">{{ current_user.name }}</h1>
+                <p class="dashboard-subtitle">Track your submitted civic issues, monitor real-time repair progress, and help build a safer community.</p>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('citizen.report_issue') }}" class="btn btn-primary btn-lg pulse-shadow">
+                    <i class="fa-solid fa-plus-circle"></i> Report New Issue
+                </a>
+            </div>
+        </div>
+
+        <!-- Metric Cards Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card metric-total">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-file-invoice"></i></span>
+                    <span class="metric-trend">Total</span>
+                </div>
+                <div class="metric-value">{{ stats.total }}</div>
+                <div class="metric-label">My Total Reports</div>
+            </div>
+
+            <div class="metric-card metric-pending">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <span class="metric-trend text-warning">Queued</span>
+                </div>
+                <div class="metric-value">{{ stats.pending }}</div>
+                <div class="metric-label">Pending Verification</div>
+            </div>
+
+            <div class="metric-card metric-progress">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-person-digging"></i></span>
+                    <span class="metric-trend text-info">Active</span>
+                </div>
+                <div class="metric-value">{{ stats.in_progress }}</div>
+                <div class="metric-label">In Progress</div>
+            </div>
+
+            <div class="metric-card metric-resolved">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-circle-check"></i></span>
+                    <span class="metric-trend text-success">Completed</span>
+                </div>
+                <div class="metric-value">{{ stats.resolved }}</div>
+                <div class="metric-label">Resolved Issues</div>
+            </div>
+
+            <div class="metric-card metric-critical">
+                <div class="metric-header">
+                    <span class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    <span class="metric-trend text-danger">Priority</span>
+                </div>
+                <div class="metric-value">{{ stats.high_priority }}</div>
+                <div class="metric-label">High / Critical Urgency</div>
+            </div>
+        </div>
+
+        <!-- Quick Access Action Hub -->
+        <div class="action-hub-bar">
+            <a href="{{ url_for('citizen.report_issue') }}" class="hub-pill highlight-pill">
+                <i class="fa-solid fa-camera"></i> + Report New Issue
+            </a>
+            <a href="{{ url_for('citizen.my_reports') }}" class="hub-pill">
+                <i class="fa-solid fa-folder-open"></i> My Reports
+            </a>
+            <a href="{{ url_for('citizen.nearby_issues') }}" class="hub-pill">
+                <i class="fa-solid fa-map-marked-alt"></i> Nearby Civic Map
+            </a>
+            <a href="{{ url_for('citizen.notifications') }}" class="hub-pill">
+                <i class="fa-solid fa-bell"></i> Notifications
+                {% if unread_notifications > 0 %}
+                    <span class="pill-count">{{ unread_notifications }}</span>
+                {% endif %}
+            </a>
+            <a href="{{ url_for('auth.profile') }}" class="hub-pill">
+                <i class="fa-solid fa-id-card"></i> My Profile
+            </a>
+        </div>
+
+        <!-- Recent Complaints Section -->
+        <div class="dashboard-section">
+            <div class="section-title-bar">
+                <div>
+                    <h2>Recent Submitted Complaints</h2>
+                    <p>Live status and department handling your reports.</p>
+                </div>
+                <a href="{{ url_for('citizen.my_reports') }}" class="btn btn-outline btn-sm">
+                    View All Reports ({{ stats.total }}) <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            {% if recent_reports %}
+                <div class="reports-table-card">
+                    <div class="table-responsive">
+                        <table class="civic-table">
+                            <thead>
+                                <tr>
+                                    <th>Complaint ID</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Location / Landmark</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in recent_reports %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('citizen.report_details', complaint_id=r.complaint_id) }}" class="complaint-link">
+                                                <strong>{{ r.complaint_id }}</strong>
+                                            </a>
+                                            {% if r.is_duplicate %}
+                                                <span class="mini-tag tag-duplicate" title="Linked to {{ r.duplicate_of }}"><i class="fa-solid fa-link"></i> Linked</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="cat-pill"><i class="fa-solid fa-tag"></i> {{ r.category }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="table-desc" title="{{ r.description }}">
+                                                {{ r.description[:65] }}{% if r.description|length > 65 %}...{% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="loc-text"><i class="fa-solid fa-location-dot"></i> {{ r.landmark or r.address or 'Recorded on Map' }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ r.priority|priority_badge }}">{{ r.priority }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ r.status|status_badge }}">{{ r.status }}</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ r.created_at[:10] }}</small>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('citizen.report_details', complaint_id=r.complaint_id) }}" class="btn btn-sm btn-outline">
+                                                Track <i class="fa-solid fa-arrow-right"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state-card">
+                    <div class="empty-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <h3>No complaints submitted yet</h3>
+                    <p>Have you spotted an infrastructure problem in your area? Report it in less than a minute.</p>
+                    <a href="{{ url_for('citizen.report_issue') }}" class="btn btn-primary btn-lg">
+                        <i class="fa-solid fa-plus-circle"></i> File Your First Report
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

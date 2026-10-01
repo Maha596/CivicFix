@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CivicFix — Public Infrastructure & Municipal Service Portal{% endblock %}</title>
+    <meta name="description" content="CivicFix is a unified municipal public infrastructure reporting and priority resolution portal.">
+    <meta name="theme-color" content="#0b0f19">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+    <!-- CivicFix Design System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="civic-body">
+
+    <!-- ═══ NAVBAR ═══ -->
+    <nav class="navbar" id="mainNavbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="brand-logo">
+                <div class="logo-icon"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="brand-text">
+                    <span class="logo-title">Civic<span>Fix</span></span>
+                    <span class="logo-badge">Municipal Portal</span>
+                </div>
+            </a>
+
+            <!-- Mobile toggle -->
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="nav-menu" id="navMenu">
+                <ul class="nav-links">
+                    <li><a href="{{ url_for('index') }}" class="nav-link"><i class="fa-solid fa-house"></i> Home</a></li>
+                    <li><a href="{{ url_for('citizen.nearby_issues') }}" class="nav-link"><i class="fa-solid fa-map-location-dot"></i> Live Map</a></li>
+                    <li><a href="{{ url_for('about') }}" class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a></li>
+
+                    {% if current_user %}
+                        {% if current_user.role == 'admin' %}
+                            <li class="nav-separator"></li>
+                            <li><a href="{{ url_for('admin.dashboard') }}" class="nav-link admin-link"><i class="fa-solid fa-gauge-high"></i> Control Panel</a></li>
+                            <li><a href="{{ url_for('admin.manage_reports') }}" class="nav-link admin-link"><i class="fa-solid fa-list-check"></i> Manage Issues</a></li>
+                            <li><a href="{{ url_for('admin.departments') }}" class="nav-link admin-link"><i class="fa-solid fa-building-user"></i> Departments</a></li>
+                        {% else %}
+                            <li class="nav-separator"></li>
+                            <li><a href="{{ url_for('citizen.dashboard') }}" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+                            <li><a href="{{ url_for('citizen.my_reports') }}" class="nav-link"><i class="fa-solid fa-clipboard-list"></i> My Reports</a></li>
+                            <li><a href="{{ url_for('citizen.report_issue') }}" class="nav-link highlight-link"><i class="fa-solid fa-plus-circle"></i> Report Issue</a></li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+
+                <div class="nav-actions">
+                    {% if current_user %}
+                        {% if current_user.role != 'admin' %}
+                            <a href="{{ url_for('citizen.notifications') }}" class="icon-btn notif-btn" title="Notifications" id="navNotifBtn">
+                                <i class="fa-regular fa-bell"></i>
+                                {% if unread_notifications > 0 %}
+                                    <span class="notif-badge">{{ unread_notifications }}</span>
+                                {% endif %}
+                            </a>
+                        {% endif %}
+
+                        <div class="user-dropdown">
+                            <button class="user-pill" id="userMenuBtn" aria-expanded="false">
+                                <div class="avatar-circle">{{ current_user.name[0]|upper }}</div>
+                                <span class="user-name">{{ current_user.name }}</span>
+                                <span class="role-tag role-{{ current_user.role }}">{{ current_user.role }}</span>
+                                <i class="fa-solid fa-angle-down" style="font-size:11px; color: var(--text-dim);"></i>
+                            </button>
+                            <div class="dropdown-panel" id="userDropdownPanel">
+                                <div class="dropdown-header">
+                                    <strong>{{ current_user.name }}</strong>
+                                    <small>{{ current_user.email }}</small>
+                                </div>
+                                <hr>
+                                <a href="{{ url_for('auth.profile') }}"><i class="fa-regular fa-user"></i> My Profile</a>
+                                {% if current_user.role == 'admin' %}
+                                    <a href="{{ url_for('admin.dashboard') }}"><i class="fa-solid fa-shield-halved"></i> Admin Portal</a>
+                                {% else %}
+                                    <a href="{{ url_for('citizen.dashboard') }}"><i class="fa-solid fa-folder-open"></i> My Dashboard</a>
+                                    <a href="{{ url_for('citizen.notifications') }}"><i class="fa-solid fa-bell"></i> Notifications</a>
+                                {% endif %}
+                                <hr>
+                                <a href="{{ url_for('auth.logout') }}" class="logout-link"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-glass"><i class="fa-solid fa-right-to-bracket"></i> Sign In</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Register</a>
+                        <a href="{{ url_for('auth.admin_login') }}" class="btn btn-dark-subtle" title="Municipal Authority Login"><i class="fa-solid fa-user-shield"></i> Authority</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ FLASH MESSAGES ═══ -->
+    <div class="flash-container" id="flashContainer">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} animate-slide-down">
+                        <div class="alert-icon">
+                            {% if category == 'success' %}<i class="fa-solid fa-circle-check"></i>
+                            {% elif category == 'danger' %}<i class="fa-solid fa-triangle-exclamation"></i>
+                            {% elif category == 'warning' %}<i class="fa-solid fa-circle-exclamation"></i>
+                            {% else %}<i class="fa-solid fa-circle-info"></i>{% endif %}
+                        </div>
+                        <div class="alert-msg">{{ message }}</div>
+                        <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="main-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="civic-footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-col brand-col">
+                    <a href="{{ url_for('index') }}" class="brand-logo footer-brand">
+                        <div class="logo-icon"><i class="fa-solid fa-city"></i></div>
+                        <span class="logo-title">Civic<span>Fix</span></span>
+                    </a>
+                    <p class="footer-desc">
+                        Intelligent Public Infrastructure Issue Reporting & Resolution. Powered by Computer Vision AI,
+                        Multi-Factor Priority Scoring & GeoSpatial Duplicate Detection.
+                    </p>
+                    <div class="academic-tag">
+                        <i class="fa-solid fa-graduation-cap"></i> 3rd Year B.Tech — AI & Data Science
+                    </div>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Home</a></li>
+                        <li><a href="{{ url_for('citizen.nearby_issues') }}">Public Issues Map</a></li>
+                        <li><a href="{{ url_for('citizen.report_issue') }}">File a Complaint</a></li>
+                        <li><a href="{{ url_for('about') }}">About CivicFix</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4>AI Capabilities</h4>
+                    <ul>
+                        <li><i class="fa-solid fa-check text-accent"></i> Visual Feature Classification</li>
+                        <li><i class="fa-solid fa-check text-accent"></i> Confidence Calibration</li>
+                        <li><i class="fa-solid fa-check text-accent"></i> Haversine Geo-Deduplication</li>
+                        <li><i class="fa-solid fa-check text-accent"></i> Dynamic Priority Scoring</li>
+                        <li><i class="fa-solid fa-check text-accent"></i> Real-time Status Tracking</li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Authority Portal</h4>
+                    <p class="footer-subtext">Authorized municipal engineers & administrators can access the control panel below.</p>
+                    <a href="{{ url_for('auth.admin_login') }}" class="btn btn-outline-sm-white">
+                        <i class="fa-solid fa-lock"></i> Authority Console
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 CivicFix System &mdash; 3rd Year AI & Data Science Mini Project</p>
+                <div class="tech-stack-pills">
+                    <span><i class="fa-brands fa-python"></i> Python Flask</span>
+                    <span><i class="fa-solid fa-brain"></i> Computer Vision AI</span>
+                    <span><i class="fa-solid fa-database"></i> SQLite / MySQL</span>
+                    <span><i class="fa-solid fa-map"></i> Leaflet.js GIS</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+
+    <script>
+        // Navbar dropdown & mobile toggle
+        document.getElementById('navToggle')?.addEventListener('click', () => {
+            document.getElementById('navMenu').classList.toggle('open');
+        });
+        document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const panel = document.getElementById('userDropdownPanel');
+            panel.classList.toggle('open');
+            e.currentTarget.setAttribute('aria-expanded', panel.classList.contains('open'));
+        });
+        document.addEventListener('click', () => {
+            document.getElementById('userDropdownPanel')?.classList.remove('open');
+        });
+
+        // Auto-dismiss flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(a => {
+                a.style.transition = 'opacity 0.5s ease';
+                a.style.opacity = '0';
+                setTimeout(() => a.remove(), 500);
+            });
+        }, 5000);
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('mainNavbar');
+            if (window.scrollY > 20) {
+                nav.style.borderBottomColor = 'rgba(99,102,241,0.20)';
+            } else {
+                nav.style.borderBottomColor = 'rgba(255,255,255,0.08)';
+            }
+        });
+    </script>
+</body>
+</html>

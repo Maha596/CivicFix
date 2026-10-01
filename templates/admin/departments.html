@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Municipal Departments - Administrator Console{% endblock %}
+
+{% block content %}
+<div class="admin-departments-page">
+    <div class="container">
+        <div class="page-header-bar">
+            <div>
+                <span class="section-tag admin-tag"><i class="fa-solid fa-building-user"></i> Administrative Roster</span>
+                <h1 class="page-title">Municipal Departments</h1>
+                <p class="page-subtitle">Configure municipal field departments and monitor resolution throughput.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="row" style="display:flex; gap:25px; flex-wrap:wrap;">
+            <!-- Left: Add New Department Card -->
+            <div style="flex:1; min-width:320px;">
+                <div class="specs-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-plus-circle"></i> Add Department</h3>
+                    </div>
+                    <form action="{{ url_for('admin.departments') }}" method="POST" style="padding:20px;">
+                        <div class="form-group">
+                            <label for="deptName">Department Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="deptName" class="form-control" placeholder="e.g. Traffic Signal Maintenance" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="deptDesc">Operational Scope Description</label>
+                            <textarea name="description" id="deptDesc" rows="3" class="form-control" placeholder="Handles civic infrastructure repairs for..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fa-solid fa-building-circle-check"></i> Register Department
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Existing Departments Table -->
+            <div style="flex:2; min-width:450px;">
+                <div class="reports-table-card">
+                    <div class="card-header" style="padding:16px 20px; border-bottom:1px solid var(--border-color);">
+                        <h3 style="margin:0;"><i class="fa-solid fa-building"></i> Active Municipal Units ({{ departments|length }})</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="civic-table">
+                            <thead>
+                                <tr>
+                                    <th>Department Name</th>
+                                    <th>Assigned Complaints</th>
+                                    <th>Resolved</th>
+                                    <th>Resolution Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in departments %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ d.name }}</strong>
+                                            {% if d.description %}
+                                                <div class="text-muted" style="font-size:12px;">{{ d.description }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge badge-secondary">{{ d.total_reports or 0 }}</span></td>
+                                        <td><span class="badge badge-resolved">{{ d.resolved_reports or 0 }}</span></td>
+                                        <td>
+                                            {% set rate = ((d.resolved_reports or 0) / (d.total_reports or 1) * 100)|round(1) if d.total_reports else 0 %}
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <div class="progress-bar-container" style="flex:1; height:6px;">
+                                                    <div class="progress-bar-fill" style="width: {{ rate }}%; background-color:#10b981;"></div>
+                                                </div>
+                                                <span style="font-size:12px; font-weight:600;">{{ rate }}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

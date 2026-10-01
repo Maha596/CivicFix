@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Portal Login - CivicFix{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card admin-auth-card">
+        <div class="auth-header">
+            <div class="auth-icon-badge admin-badge-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2>Authority Portal Login</h2>
+            <p>Authorized access for Municipal Engineers, Department Heads & City Officials.</p>
+        </div>
+
+        <form action="{{ url_for('auth.admin_login', next=request.args.get('next')) }}" method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="admin_email"><i class="fa-solid fa-id-badge"></i> Administrator Email</label>
+                <input type="email" id="admin_email" name="email" value="{{ email or '' }}" class="form-control" placeholder="admin@civicfix.gov" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="admin_password"><i class="fa-solid fa-key"></i> Security Password</label>
+                <input type="password" id="admin_password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div class="demo-credentials-box admin-cred-box">
+                <div class="demo-cred-header"><i class="fa-solid fa-shield"></i> Default Administrator Account:</div>
+                <div class="demo-cred-body">
+                    <span><strong>Email:</strong> admin@civicfix.gov</span>
+                    <span><strong>Password:</strong> Admin@123</span>
+                </div>
+                <button type="button" class="btn-fill-demo" onclick="document.getElementById('admin_email').value='admin@civicfix.gov'; document.getElementById('admin_password').value='Admin@123';">
+                    Auto-Fill Admin
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-admin btn-block btn-lg">
+                <i class="fa-solid fa-lock-open"></i> Authenticate & Enter Console
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Citizen looking to report an issue? <a href="{{ url_for('auth.login') }}">Go to Citizen Login</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

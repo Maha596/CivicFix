@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Server Error - CivicFix{% endblock %}
+
+{% block content %}
+<div class="container text-center" style="padding: 100px 20px;">
+    <div style="font-size: 72px; font-weight: 800; color: #ef4444;">500</div>
+    <h2 style="font-size: 28px; margin: 10px 0;">Internal System Error</h2>
+    <p class="text-muted" style="max-width: 450px; margin: 0 auto 30px auto;">
+        {{ message or 'An unexpected error occurred while processing your request. Please try again or return to the main dashboard.' }}
+    </p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+        <i class="fa-solid fa-house"></i> Return to Homepage
+    </a>
+</div>
+{% endblock %}

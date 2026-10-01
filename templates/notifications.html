@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - CivicFix{% endblock %}
+
+{% block content %}
+<div class="notifications-page">
+    <div class="container container-sm">
+        <div class="page-header-bar">
+            <div>
+                <span class="section-tag"><i class="fa-regular fa-bell"></i> Alerts</span>
+                <h1 class="page-title">Notification Center</h1>
+                <p class="page-subtitle">Real-time alerts regarding status transitions, assignments, and resolution reviews.</p>
+            </div>
+
+            {% if notifications %}
+                <form action="{{ url_for('citizen.mark_all_as_read') }}" method="POST">
+                    <button type="submit" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-check-double"></i> Mark All as Read
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% if notifications %}
+            <div class="notifications-card">
+                <ul class="notif-list">
+                    {% for n in notifications %}
+                        <li class="notif-item {% if not n.is_read %}notif-unread{% endif %}" id="notif-{{ n.id }}">
+                            <div class="notif-icon">
+                                {% if 'Resolved' in n.title or 'resolved' in n.message %}
+                                    <i class="fa-solid fa-circle-check text-success"></i>
+                                {% elif 'assigned' in n.message or 'Assigned' in n.title %}
+                                    <i class="fa-solid fa-building-user text-info"></i>
+                                {% elif 'Verified' in n.message or 'verified' in n.message %}
+                                    <i class="fa-solid fa-shield-halved text-primary"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-circle-info text-warning"></i>
+                                {% endif %}
+                            </div>
+
+                            <div class="notif-body">
+                                <div class="notif-top">
+                                    <h4 class="notif-title">{{ n.title or 'Status Update' }}</h4>
+                                    <span class="notif-time">{{ n.created_at }}</span>
+                                </div>
+                                <p class="notif-msg">{{ n.message }}</p>
+                                
+                                <div class="notif-actions">
+                                    {% if n.report_id %}
+                                        <a href="{{ url_for('citizen.report_details', complaint_id='CIV-2026-00001') }}" class="btn-notif-link" onclick="markNotificationRead({{ n.id }})">
+                                            View Complaint <i class="fa-solid fa-arrow-right"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if not n.is_read %}
+                                        <button class="btn-mark-read" onclick="markNotificationRead({{ n.id }})">
+                                            Mark as read
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <div class="empty-icon"><i class="fa-regular fa-bell-slash"></i></div>
+                <h3>No Notifications</h3>
+                <p>You have caught up with all updates. We will notify you when authorities act on your reports.</p>
+                <a href="{{ url_for('citizen.dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function markNotificationRead(notifId) {
+        fetch('/notifications/read/' + notifId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }).then(function(res) {
+            var el = document.getElementById('notif-' + notifId);
+            if (el) {
+                el.classList.remove('notif-unread');
+                var btn = el.querySelector('.btn-mark-read');
+                if (btn) btn.remove();
+            }
+        });
+    }
+</script>
+{% endblock %}

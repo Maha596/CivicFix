@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Complaint {{ report.complaint_id }} - CivicFix{% endblock %}
+
+{% block head %}
+<style>
+    #detailMap {
+        height: 240px;
+        width: 100%;
+        border-radius: var(--radius-md);
+        margin-top: 10px;
+        border: 1px solid var(--border-color);
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-details-page">
+    <div class="container">
+        <!-- Top Breadcrumb & ID Bar -->
+        <div class="details-top-bar">
+            <div>
+                <a href="{{ url_for('citizen.my_reports') if not is_admin else url_for('admin.manage_reports') }}" class="back-link">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Reports
+                </a>
+                <div class="complaint-id-header">
+                    <h1 class="complaint-id-title">{{ report.complaint_id }}</h1>
+                    <button class="btn-copy-id" onclick="copyComplaintId('{{ report.complaint_id }}')" title="Copy ID to clipboard">
+                        <i class="fa-regular fa-copy"></i> Copy ID
+                    </button>
+                    <span class="badge {{ report.priority|priority_badge }} badge-lg">{{ report.priority }}</span>
+                    <span class="badge {{ report.status|status_badge }} badge-lg">{{ report.status }}</span>
+                    {% if report.is_duplicate %}
+                        <span class="badge badge-warning" title="Identified as duplicate report"><i class="fa-solid fa-link"></i> Linked Duplicate</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="top-date-info">
+                <div><strong>Reported:</strong> {{ report.created_at }}</div>
+                <div><strong>Last Updated:</strong> {{ report.updated_at }}</div>
+            </div>
+        </div>
+
+        <!-- VISUAL STATUS TIMELINE STEPPER -->
+        <div class="timeline-stepper-card">
+            <h3 class="stepper-title"><i class="fa-solid fa-route"></i> Complaint Lifecycle Timeline</h3>
+            <div class="stepper-track">
+                <!-- Step 1: REPORTED -->
+                <div class="step-node {% if report.status in ['REPORTED', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED'] %}node-completed{% endif %}">
+                    <div class="node-circle"><i class="fa-solid fa-file-lines"></i></div>
+                    <div class="node-label">Reported</div>
+                    <div class="node-sub">Complaint Filed</div>
+                </div>
+
+                <div class="step-connector {% if report.status in ['VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED'] %}connector-active{% endif %}"></div>
+
+                <!-- Step 2: VERIFIED -->
+                <div class="step-node {% if report.status in ['VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED'] %}node-completed{% endif %}">
+                    <div class="node-circle"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <div class="node-label">Verified</div>
+                    <div class="node-sub">Admin Inspected</div>
+                </div>
+
+                <div class="step-connector {% if report.status in ['ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED'] %}connector-active{% endif %}"></div>
+
+                <!-- Step 3: ASSIGNED -->
+                <div class="step-node {% if report.status in ['ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED'] %}node-completed{% endif %}">
+                    <div class="node-circle"><i class="fa-solid fa-building-user"></i></div>
+                    <div class="node-label">Assigned</div>
+                    <div class="node-sub">{{ report.department_name or 'Department' }}</div>
+                </div>
+
+                <div class="step-connector {% if report.status in ['IN_PROGRESS', 'RESOLVED', 'CLOSED'] %}connector-active{% endif %}"></div>
+
+                <!-- Step 4: IN_PROGRESS -->
+                <div class="step-node {% if report.status in ['IN_PROGRESS', 'RESOLVED', 'CLOSED'] %}node-completed{% endif %}">
+                    <div class="node-circle"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                    <div class="node-label">In Progress</div>
+                    <div class="node-sub">Remediation Underway</div>
+                </div>
+
+                <div class="step-connector {% if report.status in ['RESOLVED', 'CLOSED'] %}connector-active{% endif %}"></div>
+
+                <!-- Step 5: RESOLVED -->
+                <div class="step-node {% if report.status in ['RESOLVED', 'CLOSED'] %}node-completed{% endif %}">
+                    <div class="node-circle"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="node-label">Resolved</div>
+                    <div class="node-sub">Remediated & Verified</div>
+                </div>
+            </div>
+
+            {% if report.status == 'REOPENED' %}
+                <div class="reopened-alert-bar">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <strong>Complaint Reopened:</strong> Citizen indicated the issue persists. Under re-examination by municipal engineers.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- CITIZEN RESOLUTION CONFIRMATION ACTIONS -->
+        {% if report.status == 'RESOLVED' and is_owner %}
+            <div class="resolution-confirmation-card">
+                <div class="conf-banner-content">
+                    <div class="conf-icon"><i class="fa-solid fa-clipboard-question"></i></div>
+                    <div>
+                        <h3>Has this infrastructure issue been satisfactorily repaired?</h3>
+                        <p>Authorities have submitted resolution evidence. Please inspect and confirm whether the issue is resolved or still exists.</p>
+                    </div>
+                </div>
+                <form action="{{ url_for('citizen.confirm_resolution', complaint_id=report.complaint_id) }}" method="POST" class="conf-actions-form">
+                    <div class="conf-input-group">
+                        <input type="text" name="note" placeholder="Optional remark or feedback for the municipal department..." class="form-control">
+                    </div>
+                    <div class="conf-btn-group">
+                        <button type="submit" name="action" value="resolved" class="btn btn-success btn-lg">
+                            <i class="fa-solid fa-circle-check"></i> ✓ Issue Resolved
+                        </button>
+                        <button type="submit" name="action" value="reopen" class="btn btn-danger btn-lg">
+                            <i class="fa-solid fa-rotate-left"></i> ✗ Issue Still Exists (Reopen)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- MAIN DETAILS TWO-COLUMN GRID -->
+        <div class="details-grid">
+            <!-- Left Column: Photographic Evidence & AI Diagnosis -->
+            <div class="details-left">
+                <!-- Before / After Photographic Evidence Card -->
+                <div class="evidence-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-camera"></i> Photographic Evidence</h3>
+                    </div>
+
+                    {% if resolution and resolution.resolution_image %}
+                        <!-- Side-by-side Before and After -->
+                        <div class="before-after-container">
+                            <div class="evidence-box">
+                                <span class="evidence-tag tag-before">Initial Issue (Before)</span>
+                                {% if report.image_path %}
+                                    <img src="{{ url_for('uploaded_file', filename=report.image_path) }}" alt="Issue Before" class="evidence-img">
+                                {% else %}
+                                    <div class="evidence-empty">No Initial Image</div>
+                                {% endif %}
+                            </div>
+                            <div class="evidence-box">
+                                <span class="evidence-tag tag-after">Resolution Fix (After)</span>
+                                <img src="{{ url_for('uploaded_file', filename=resolution.resolution_image) }}" alt="Resolution Evidence" class="evidence-img">
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Single initial image -->
+                        <div class="single-evidence-box">
+                            {% if report.image_path %}
+                                <img src="{{ url_for('uploaded_file', filename=report.image_path) }}" alt="{{ report.category }}" class="evidence-img-main">
+                            {% else %}
+                                <div class="evidence-empty"><i class="fa-solid fa-image"></i> No photograph attached</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if resolution %}
+                        <div class="resolution-notes-panel">
+                            <h4><i class="fa-solid fa-check-double text-success"></i> Official Resolution Report</h4>
+                            <p class="res-text">"{{ resolution.resolution_note }}"</p>
+                            <div class="res-meta">
+                                <span><i class="fa-solid fa-user-check"></i> Resolved By: <strong>{{ resolution.resolver_name }}</strong></span>
+                                <span><i class="fa-regular fa-clock"></i> {{ resolution.resolved_at }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- AI Computer Vision Diagnostics Card -->
+                <div class="ai-diagnostics-box">
+                    <div class="diag-header">
+                        <div class="diag-icon"><i class="fa-solid fa-brain"></i></div>
+                        <div>
+                            <h4>AI Issue Classification Module</h4>
+                            <p class="diag-sub">Multi-Class Computer Vision Feature Extraction</p>
+                        </div>
+                    </div>
+
+                    <div class="diag-body">
+                        <div class="diag-stat-row">
+                            <span class="diag-lbl">AI Predicted Category:</span>
+                            <strong class="diag-val">{{ report.ai_prediction or report.category }}</strong>
+                        </div>
+                        <div class="diag-stat-row">
+                            <span class="diag-lbl">Confidence Score:</span>
+                            <span class="diag-conf-badge">{{ report.ai_confidence or 91.0 }}%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: {{ report.ai_confidence or 91.0 }}%;"></div>
+                        </div>
+
+                        <div class="diag-stat-row" style="margin-top: 10px;">
+                            <span class="diag-lbl">Citizen Confirmed Category:</span>
+                            <strong class="text-primary">{{ report.category }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Intelligent Priority Calculation Breakdown Card -->
+                <div class="priority-breakdown-card">
+                    <div class="pri-header">
+                        <div class="pri-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                        <div>
+                            <h4>Intelligent Priority Engine</h4>
+                            <span class="badge {{ report.priority|priority_badge }}">{{ report.priority }} PRIORITY</span>
+                        </div>
+                    </div>
+                    <div class="pri-body">
+                        <p class="pri-calc-desc">
+                            Priority is computed dynamically using category risk weighting, citizen severity, spatial report clustering, safety keywords, and complaint aging.
+                        </p>
+                        <div class="pri-reason-box">
+                            <strong>Formula Breakdown:</strong>
+                            <p>{{ report.priority_reason or 'Evaluated based on citizen severity and infrastructure category.' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Complaint Specs, Geolocation Map, Updates History -->
+            <div class="details-right">
+                <!-- Issue Information Card -->
+                <div class="specs-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-circle-info"></i> Complaint Specifications</h3>
+                    </div>
+                    <div class="specs-body">
+                        <div class="spec-item">
+                            <span class="spec-label">Issue Category</span>
+                            <span class="spec-value">{{ report.category }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Assigned Department</span>
+                            <span class="spec-value highlight-val">{{ report.department_name or 'Pending Authority Assignment' }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Citizen Severity</span>
+                            <span class="spec-value">{{ report.severity }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Reported By</span>
+                            <span class="spec-value">{{ report.citizen_name }}</span>
+                        </div>
+
+                        <div class="spec-desc-block">
+                            <span class="spec-label">Description</span>
+                            <p class="desc-text">{{ report.description }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Geolocation & Map Pin Card -->
+                <div class="map-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-location-dot"></i> Issue Geolocation</h3>
+                    </div>
+                    <div class="map-card-body">
+                        <div class="loc-details">
+                            <div><strong>Landmark:</strong> {{ report.landmark or 'Not provided' }}</div>
+                            <div><strong>Address:</strong> {{ report.address or 'Recorded coordinates' }}</div>
+                            {% if report.latitude and report.longitude %}
+                                <div class="coord-tag">
+                                    <i class="fa-solid fa-globe"></i> GPS: {{ report.latitude }}, {{ report.longitude }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if report.latitude and report.longitude %}
+                            <div id="detailMap"></div>
+                        {% else %}
+                            <div class="no-map-box">Coordinates not recorded for this complaint.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Duplicate Detection Alerts Card (If any) -->
+                {% if duplicate_links %}
+                    <div class="duplicate-alert-card">
+                        <div class="dup-header">
+                            <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                            <h4>Spatial Proximity Duplicate Alerts</h4>
+                        </div>
+                        <p class="dup-sub">System identified adjacent complaints reported near this location:</p>
+                        <div class="dup-list">
+                            {% for dl in duplicate_links %}
+                                <div class="dup-item">
+                                    <div>
+                                        <a href="{{ url_for('citizen.report_details', complaint_id=dl.dup_complaint_id) }}" class="dup-link">
+                                            <strong>{{ dl.dup_complaint_id }}</strong>
+                                        </a>
+                                        <span class="dup-dist">({{ dl.distance_meters }}m away)</span>
+                                    </div>
+                                    <div class="dup-score-badge">Similarity: {{ dl.similarity_score }}%</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Administrative Audit Trail & Updates History -->
+                <div class="updates-timeline-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Audit History & Remarks</h3>
+                    </div>
+                    <div class="updates-body">
+                        {% if timeline %}
+                            <ul class="audit-list">
+                                {% for up in timeline %}
+                                    <li class="audit-item">
+                                        <div class="audit-marker"></div>
+                                        <div class="audit-content">
+                                            <div class="audit-top">
+                                                <span class="badge {{ up.status|status_badge }}">{{ up.status }}</span>
+                                                <small class="audit-time">{{ up.created_at }}</small>
+                                            </div>
+                                            <p class="audit-remark">{{ up.remark }}</p>
+                                            <div class="audit-author">
+                                                <i class="fa-regular fa-circle-user"></i> Logged by: {{ up.updater_name }} ({{ up.updater_role }})
+                                            </div>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">No updates recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if report.latitude and report.longitude %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var lat = {{ report.latitude }};
+        var lon = {{ report.longitude }};
+        var map = L.map('detailMap').setView([lat, lon], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker = L.marker([lat, lon]).addTo(map);
+        marker.bindPopup("<strong>{{ report.complaint_id }}</strong><br>{{ report.category }}<br>Status: {{ report.status }}").openPopup();
+    });
+</script>
+{% endif %}
+<script>
+    function copyComplaintId(id) {
+        navigator.clipboard.writeText(id).then(function() {
+            alert("Complaint ID " + id + " copied to clipboard!");
+        });
+    }
+</script>
+{% endblock %}

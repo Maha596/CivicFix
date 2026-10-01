@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Civic Complaints - Administrator Portal{% endblock %}
+
+{% block content %}
+<div class="admin-manage-page">
+    <div class="container-fluid">
+        <div class="page-header-bar">
+            <div>
+                <span class="section-tag admin-tag"><i class="fa-solid fa-list-check"></i> Master Triage</span>
+                <h1 class="page-title">Manage Infrastructure Complaints</h1>
+                <p class="page-subtitle">Verify incoming issues, dispatch municipal departments, set urgency priorities, and verify resolution evidence.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">
+                    <i class="fa-solid fa-chart-line"></i> Operations Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter & Search Controls -->
+        <div class="filter-card">
+            <form action="{{ url_for('admin.manage_reports') }}" method="GET" class="filter-form">
+                <div class="filter-row">
+                    <div class="search-input-group">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" name="search" value="{{ search or '' }}" placeholder="Search ID, citizen name, description, landmark..." class="form-control">
+                    </div>
+
+                    <div class="filter-select-group">
+                        <select name="status" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            {% for st in statuses %}
+                                <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-select-group">
+                        <select name="category" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-select-group">
+                        <select name="priority" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Priorities</option>
+                            {% for p in priorities %}
+                                <option value="{{ p }}" {% if priority_filter == p %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-select-group">
+                        <select name="department" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Departments</option>
+                            {% for d in departments %}
+                                <option value="{{ d.id }}" {% if department_filter == d.id|string %}selected{% endif %}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+                        {% if search or status_filter or category_filter or priority_filter or department_filter %}
+                            <a href="{{ url_for('admin.manage_reports') }}" class="btn btn-outline btn-sm">Clear</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Complaints Table Card -->
+        <div class="reports-table-card">
+            <div class="table-responsive">
+                <table class="civic-table admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID & Preview</th>
+                            <th>Category & AI</th>
+                            <th>Citizen</th>
+                            <th>Location / Landmark</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assigned Dept</th>
+                            <th>Date</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if reports %}
+                            {% for r in reports %}
+                                <tr>
+                                    <td>
+                                        <div class="table-id-flex">
+                                            {% if r.image_path %}
+                                                <img src="{{ url_for('uploaded_file', filename=r.image_path) }}" alt="{{ r.category }}" class="table-thumb">
+                                            {% else %}
+                                                <div class="table-thumb-empty"><i class="fa-solid fa-image"></i></div>
+                                            {% endif %}
+                                            <div>
+                                                <a href="{{ url_for('citizen.report_details', complaint_id=r.complaint_id) }}" class="complaint-link">
+                                                    <strong>{{ r.complaint_id }}</strong>
+                                                </a>
+                                                {% if r.is_duplicate %}
+                                                    <div><span class="mini-tag tag-duplicate" title="Linked to {{ r.duplicate_of }}"><i class="fa-solid fa-link"></i> Linked Dup</span></div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div><strong>{{ r.category }}</strong></div>
+                                        <small class="text-muted"><i class="fa-solid fa-brain"></i> AI: {{ r.ai_prediction }} ({{ r.ai_confidence }}%)</small>
+                                    </td>
+                                    <td>
+                                        <div>{{ r.citizen_name }}</div>
+                                        <small class="text-muted">{{ r.citizen_phone or 'No phone' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="loc-text" title="{{ r.address }}">
+                                            <i class="fa-solid fa-location-dot"></i> {{ r.landmark or r.address or 'Map Coordinates' }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ r.priority|priority_badge }}">{{ r.priority }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ r.status|status_badge }}">{{ r.status }}</span>
+                                    </td>
+                                    <td>
+                                        {% if r.department_name %}
+                                            <span class="dept-badge"><i class="fa-solid fa-building"></i> {{ r.department_name }}</span>
+                                        {% else %}
+                                            <span class="text-warning"><i class="fa-solid fa-circle-question"></i> Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ r.created_at[:10] }}</small>
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="admin-action-btn-group">
+                                            <!-- View Details -->
+                                            <a href="{{ url_for('citizen.report_details', complaint_id=r.complaint_id) }}" class="btn-icon" title="View Full Timeline">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+
+                                            <!-- Verify Button (Quick) -->
+                                            {% if r.status == 'REPORTED' %}
+                                                <form action="{{ url_for('admin.update_status', report_id=r.id) }}" method="POST" style="display:inline;">
+                                                    <input type="hidden" name="status" value="VERIFIED">
+                                                    <input type="hidden" name="remark" value="Issue inspected and verified by municipal authority.">
+                                                    <button type="submit" class="btn-icon text-success" title="Mark as Verified">
+                                                        <i class="fa-solid fa-clipboard-check"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+
+                                            <!-- Assign Department Modal Trigger -->
+                                            <button type="button" class="btn-icon text-primary" title="Assign Department" onclick="openAssignModal({{ r.id }}, '{{ r.complaint_id }}', '{{ r.department_id or '' }}')">
+                                                <i class="fa-solid fa-building-user"></i>
+                                            </button>
+
+                                            <!-- Change Priority Modal Trigger -->
+                                            <button type="button" class="btn-icon text-warning" title="Adjust Priority" onclick="openPriorityModal({{ r.id }}, '{{ r.complaint_id }}', '{{ r.priority }}')">
+                                                <i class="fa-solid fa-gauge-high"></i>
+                                            </button>
+
+                                            <!-- Status / Remark Modal Trigger -->
+                                            <button type="button" class="btn-icon text-info" title="Update Status & Remarks" onclick="openStatusModal({{ r.id }}, '{{ r.complaint_id }}', '{{ r.status }}')">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+
+                                            <!-- Resolve Modal Trigger -->
+                                            {% if r.status != 'RESOLVED' and r.status != 'CLOSED' %}
+                                                <button type="button" class="btn-icon text-success" title="Upload Evidence & Resolve" onclick="openResolveModal({{ r.id }}, '{{ r.complaint_id }}')">
+                                                    <i class="fa-solid fa-circle-check"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center" style="padding: 40px;">
+                                    <div class="empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+                                    <p>No complaints matching the selected criteria.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. Assign Department Modal -->
+<div class="civic-modal" id="assignModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-building-user"></i> Assign Department</h3>
+                <button type="button" class="close-modal" onclick="closeModal('assignModal')">&times;</button>
+            </div>
+            <form id="assignForm" method="POST">
+                <div class="modal-body">
+                    <p>Assign complaint <strong id="assignComplaintId">-</strong> to an authorized municipal department:</p>
+                    <div class="form-group">
+                        <label for="deptSelect">Target Department</label>
+                        <select name="department_id" id="deptSelect" class="form-control" required>
+                            <option value="">-- Choose Department --</option>
+                            {% for d in departments %}
+                                <option value="{{ d.id }}">{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignRemark">Assignment Remarks / Work Order Notes</label>
+                        <textarea name="remark" id="assignRemark" rows="2" class="form-control" placeholder="Dispatch field team for on-site assessment..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Confirm Assignment</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('assignModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Priority Change Modal -->
+<div class="civic-modal" id="priorityModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-gauge-high"></i> Modify Complaint Priority</h3>
+                <button type="button" class="close-modal" onclick="closeModal('priorityModal')">&times;</button>
+            </div>
+            <form id="priorityForm" method="POST">
+                <div class="modal-body">
+                    <p>Override priority calculation for complaint <strong id="priorityComplaintId">-</strong>:</p>
+                    <div class="form-group">
+                        <label for="modalPrioritySelect">Urgency Level</label>
+                        <select name="priority" id="modalPrioritySelect" class="form-control" required>
+                            {% for p in priorities %}
+                                <option value="{{ p }}">{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="priorityRemark">Justification for Priority Change</label>
+                        <input type="text" name="remark" id="priorityRemark" class="form-control" placeholder="Escalated due to heavy traffic junction proximity">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning"><i class="fa-solid fa-floppy-disk"></i> Update Priority</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('priorityModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Status Update Modal -->
+<div class="civic-modal" id="statusModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square"></i> Change Complaint Status</h3>
+                <button type="button" class="close-modal" onclick="closeModal('statusModal')">&times;</button>
+            </div>
+            <form id="statusForm" method="POST">
+                <div class="modal-body">
+                    <p>Transition workflow lifecycle for <strong id="statusComplaintId">-</strong>:</p>
+                    <div class="form-group">
+                        <label for="modalStatusSelect">New Status</label>
+                        <select name="status" id="modalStatusSelect" class="form-control" required>
+                            {% for s in statuses %}
+                                <option value="{{ s }}">{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="statusRemark">Administrator Official Remark</label>
+                        <textarea name="remark" id="statusRemark" rows="3" class="form-control" placeholder="Field team dispatched on-site; excavation in progress..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Commit Status Change</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('statusModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Resolve with Evidence Modal -->
+<div class="civic-modal" id="resolveModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-circle-check text-success"></i> Mark Resolved & Attach Evidence</h3>
+                <button type="button" class="close-modal" onclick="closeModal('resolveModal')">&times;</button>
+            </div>
+            <form id="resolveForm" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p>Upload completion photographic proof and remediation notes for <strong id="resolveComplaintId">-</strong>:</p>
+                    
+                    <div class="form-group">
+                        <label for="resolutionImage"><i class="fa-solid fa-camera"></i> Resolution Proof Photograph (After)</label>
+                        <input type="file" name="resolution_image" id="resolutionImage" accept="image/*" class="form-control">
+                        <small class="text-muted">Take or upload a picture showing the repaired site.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="resolutionNote"><i class="fa-solid fa-file-pen"></i> Official Resolution Report <span class="text-danger">*</span></label>
+                        <textarea name="resolution_note" id="resolutionNote" rows="3" class="form-control" placeholder="e.g. Pothole filled with cold mix asphalt and steam rolled. Surrounding pavement restored to standard grade." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-circle-check"></i> Mark Complaint RESOLVED</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('resolveModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function openAssignModal(reportId, complaintId, currentDeptId) {
+        document.getElementById('assignComplaintId').innerText = complaintId;
+        document.getElementById('assignForm').action = '/admin/reports/' + reportId + '/assign';
+        if (currentDeptId) {
+            document.getElementById('deptSelect').value = currentDeptId;
+        }
+        document.getElementById('assignModal').style.display = 'flex';
+    }
+
+    function openPriorityModal(reportId, complaintId, currentPriority) {
+        document.getElementById('priorityComplaintId').innerText = complaintId;
+        document.getElementById('priorityForm').action = '/admin/reports/' + reportId + '/change-priority';
+        document.getElementById('modalPrioritySelect').value = currentPriority;
+        document.getElementById('priorityModal').style.display = 'flex';
+    }
+
+    function openStatusModal(reportId, complaintId, currentStatus) {
+        document.getElementById('statusComplaintId').innerText = complaintId;
+        document.getElementById('statusForm').action = '/admin/reports/' + reportId + '/update-status';
+        document.getElementById('modalStatusSelect').value = currentStatus;
+        document.getElementById('statusModal').style.display = 'flex';
+    }
+
+    function openResolveModal(reportId, complaintId) {
+        document.getElementById('resolveComplaintId').innerText = complaintId;
+        document.getElementById('resolveForm').action = '/admin/reports/' + reportId + '/resolve';
+        document.getElementById('resolveModal').style.display = 'flex';
+    }
+
+    // Close modal on background click
+    window.onclick = function(event) {
+        ['assignModal', 'priorityModal', 'statusModal', 'resolveModal'].forEach(function(mId) {
+            var modal = document.getElementById(mId);
+            if (modal && event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    };
+</script>
+{% endblock %}

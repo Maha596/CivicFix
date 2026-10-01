@@ -1,0 +1,14 @@
+﻿__pycache__/
+*.pyc
+
+civicfix.db
+
+uploads/
+
+.venv/
+venv/
+env/
+
+.vscode/
+
+*.log

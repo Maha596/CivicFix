@@ -1,0 +1,20 @@
+{
+    "model_name": "CivicFix-CV-FeatureNet-v1",
+    "input_shape": [
+        100,
+        100,
+        3
+    ],
+    "num_classes": 8,
+    "val_accuracy": 0.924,
+    "classes": [
+        "Pothole",
+        "Garbage",
+        "Broken Streetlight",
+        "Water Leakage",
+        "Damaged Road",
+        "Drainage Issue",
+        "Fallen Tree",
+        "Other"
+    ]
+}
