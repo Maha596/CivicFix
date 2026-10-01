@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CivicFix – Intelligent Public Infrastructure Issue Reporting & Resolution System
 
 **3rd-Year B.Tech Artificial Intelligence and Data Science Mini-Project**
@@ -211,3 +212,4 @@ Open your browser at: `http://127.0.0.1:5000`
 **CivicFix Academic Project Team**
 * Department of Artificial Intelligence and Data Science
 * 3rd-Year B.Tech Mini-Project 2026
+
